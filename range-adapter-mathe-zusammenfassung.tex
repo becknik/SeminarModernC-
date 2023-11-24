@@ -1,0 +1,68 @@
+\documentclass{scrarticle}
+
+\usepackage{mmap}
+\usepackage[nomath]{lmodern}
+\usepackage[EU1,T1]{fontenc}
+\usepackage[ngerman]{babel}
+\usepackage[style=german]{csquotes}
+\usepackage[skip=0pt,position=top,font=footnotesize,labelfont=bf,labelsep=endash]{caption}
+
+\usepackage{mathtools}
+\usepackage{amssymb}
+\usepackage{caption}
+\usepackage{array}
+
+\begin{document}
+\begin{table}
+	\caption{Wichtige Range Adapters des C++20-Standards\\$R,V$ sollen für Eingangs-Range und Ausgang-View stehen}
+	\label{table:cpp-range-adapters-20}
+	\hspace{-4em}
+	\begin{tabular}{l|c|l}
+		\hline
+		Adapter & Argument & Beschreibung \\
+		\hline
+		\texttt{all} & & Erzeugt View $V$ aus allen Elementen der Range $R$ \\
+		\texttt{counted}$^\ast$ & $($\textit{begin}$,n\in\mathbb{N})$ & $V:=R[$\textit{begin}$,$ \textit{begin}$+n)$ \\
+		\hline
+		\hline
+		\texttt{filter} & $P:T\to\{0,1\}$ & $V:=(r_0,\dots,r_{n-1}\mid 0\leqslant i<n=|R|: r_i=R[i]\wedge P(r_i)=1)$ \\
+		\texttt{transform} & $\pi:T\to T'$ & $V:=(r_0',\dots,r_{n-1}'\mid 0\leqslant i<n=|R|: r_i=R[i]\wedge\pi(r_i)=r_i')$ \\
+		\texttt{take} & $i\in\mathbb{N}$ & $V:=(r_0,\dots,r_{i-1}\mid 0\leqslant j\leqslant i<|R|: r_j=R[j])$ \\
+		\texttt{take\_while} & $P:T\to\{0,1\}$ & Wie \texttt{take} mit $i:=\min(\{j\mid P(R[j])=0\})$ \\
+		\texttt{drop} & $i\in\mathbb{N}$ &  $V:=(r_i,\dots,r_{n-1}\mid i\leqslant j\leqslant n=|R|: r_j=R[j])$ \\
+		\texttt{drop\_while} & $P:T\to\{0,1\}$ & Wie \texttt{drop} mit $i:=\min(\{j\mid P(R[j])=0\})$ \\
+		\texttt{reverse} & & $V:=(r_0,\dots,r_{n-1}\mid 0\leqslant i<n=|R|: r_i=R[|R|-i-1]$) \\
+		\texttt{elements} & $\underbrace{T_1\times\cdots\times T_n}_{R}\to\underbrace{T_i}_{V}$ & Erstellt View durch Abbildung der Eingangstupel auf das $i.$ Element \\
+		\hline
+		\hline
+		\texttt{keys} & $\underbrace{T_1\times T_2}_{R}\to\underbrace{T_1}_{V}$ & Erstellt View aus dem ersten Elementen der Eingangsdupel \\
+		\texttt{values} & $\underbrace{T_1\times T_2}_{R}\to\underbrace{T_2}_{V}$ & Erstellt View aus dem zweiten Elementen der Eingangsdupel \\
+		\texttt{join} & & Erstellt eine \enquote{glatte} View aus einer Range, die aus Ranges besteht \\
+		\texttt{split} & & Erstellt eine View aus einer an einem Trennzeichen gestückelten Range \\
+		\hline
+		\hline
+		\texttt{common} & & Erstellt Views mit gleich-typisierten \texttt{begin} und Sentinel aus Ranges,\\&&für welche das nicht zutrifft \\
+	\end{tabular}
+	$\ast:$ ist nicht unter \texttt{ranges::counted\_view} verfügbar
+\end{table}
+
+\begin{table}
+	\caption{Wichtige Range Adapters des C++23-Standards - Abkürzungen wie \ref{table:cpp-range-adapters-20}}
+	\label{table:cpp-range-adapters-23}
+	\hspace{-4em}
+	\begin{tabular}{l|l}
+		\hline
+		Adapter & Beschreibung \\
+		\hline
+		\texttt{zip$\langle$\_transform$\rangle$} & $\underbrace{\overbrace{T_1}^{R_1}\times\cdots\times\overbrace{T_n}^{R_n}}_{R}\to \underbrace{T_1\times\cdots\times T_n}_{V}$ \\
+		\texttt{adjacent$\langle$\_transform$\rangle^\ast$} & Erstellt $V$ aus Ranges von Teilsequenzen der Länge $n$ von $R$ \\
+		\texttt{join\_with} & Wie \texttt{join} \ref{table:cpp-range-adapters-20} mit Einfügen von Trennzeichen zwischen die geglätteten Strukturen \\
+		\texttt{chunk$\langle$\_by$\rangle$} & Erstellt $V$ aus Subranges der Länge $n$ von $R$ \\
+		\texttt{slide} & Wie \texttt{adjacent}, nur dass Tupel anstatt von Ranges gebildet werden \\
+		\texttt{stride} & Erstellt $V$ aus jedem $i.$ Element von $R$ \\
+		\texttt{enumerate} & $T\to\mathbb{N_0}\times T:t_i\mapsto(i,t_i)$ \\
+		\texttt{cartesian\_product} & \\
+	\end{tabular}
+	$\ast:n$ muss zur Übersetzungszeit bestimmt sein
+\end{table}
+\end{document}
