@@ -17,5 +17,8 @@ find_package(nlohmann_json REQUIRED)
 
 # Target setup
 
-add_executable(benchmark src/benchmark.cpp)
-target_link_libraries(benchmark PRIVATE nlohmann_json nlohmann_json::nlohmann_json ${CURL_LIBRARIES})
+add_executable(benchmark-ranges src/benchmark-ranges.cpp)
+target_link_libraries(benchmark-ranges PRIVATE nlohmann_json nlohmann_json::nlohmann_json ${CURL_LIBRARIES})
+
+add_executable(benchmark-iter src/benchmark-iter.cpp)
+target_link_libraries(benchmark-iter PRIVATE nlohmann_json nlohmann_json::nlohmann_json ${CURL_LIBRARIES})
