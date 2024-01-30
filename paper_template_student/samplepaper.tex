@@ -1,0 +1,756 @@
+% This is samplepaper.tex, a sample chapter demonstrating the
+% LLNCS macro package for Springer Computer Science proceedings;
+% Version 2.20 of 2017/10/04
+%
+\documentclass[runningheads]{llncs}
+%
+\usepackage{graphicx}
+% Used for displaying a sample figure. If possible, figure files should
+% be included in EPS format.
+%
+% If you use the hyperref package, please uncomment the following line
+% to display URLs in blue roman font according to Springer's eBook style:
+%\renewcommand\UrlFont{\color{blue}\rmfamily}
+
+\usepackage{mmap}
+\usepackage[nomath]{lmodern}
+\usepackage[T1,EU1]{fontenc}
+\usepackage[ngerman]{babel}
+\usepackage[style=german]{csquotes}
+\usepackage[skip=0pt,position=top,font=footnotesize,labelfont=bf,labelsep=endash]{caption}
+\usepackage[htt]{hyphenat}
+
+\usepackage{hyperref}
+\usepackage{subcaption}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,decorations.pathreplacing}
+\usepackage{pgfplots}
+%\pgfplotsset{compat=1.18}
+
+\usepackage[backend=biber]{biblatex}
+\addbibresource{cites.bib}
+
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{listings}
+\usepackage{enumerate}
+\usepackage{float}
+\usepackage{xcolor}
+%% Listings setup:
+\definecolor{keywords}{HTML}{000080}
+\definecolor{types}{HTML}{000000}
+\definecolor{instances}{HTML}{660E7A}
+\definecolor{string}{rgb}{0.6,0,0}
+\definecolor{comments}{HTML}{606060}
+\lstset{
+	% Formatting
+	basicstyle={\ttfamily\scriptsize},
+	% Syntax Highlighting:
+	keywordstyle={\color{keywords}},
+	otherkeywords={
+		constexpr
+		var
+	},
+	keywordstyle=[2]{\itshape\color{types}},
+	%keywords=[2]{ fib },
+	identifierstyle={\bfseries\color{instances}},
+	stringstyle={\color{string}},
+	commentstyle={\color{comments}},
+	morecomment=[l]{*},
+	% Code Lines formatting:
+	numbers=left,
+	numberstyle={\scriptsize\color{comments}},
+	stepnumber=1,
+	xleftmargin=20pt,
+	% Misc:
+	tabsize=4,
+	showspaces=false,
+	showstringspaces=false
+}
+
+\begin{document}
+\title{Iteratoren, die Ranges Bibliothek \& Views in C++23}
+%\titlerunning{Abbreviated paper title}
+% If the paper title is too long for the running head, you can set
+% an abbreviated paper title here
+\author{Jannik Becker}
+\authorrunning{J. Becker}
+\institute{}
+\maketitle
+\vspace{-.5cm}
+\begin{abstract}
+	% 	Eine Aufarbeitung der Zugriffsmöglichkeiten auf C++-Container auf Stand des C++23-Standard.
+	% 	Ausführlichen Diskussion der drei Iteratortypen nach  anhand der objektorientierten Iteratoren, Ranges-Bibliothek und Views.
+	% 	Diskussion von Best-Practices und Einordnung der Konzepte durch ein Code-Benchmark nach .
+
+	% Die Ausarbeitung konzentriert sich auf die Zugriffsmethoden auf C++-Container gemäß dem C++23-Standard, insbesondere auf die Einführung der Ranges-Bibliothek und Views.
+	% Es wird diskutiert, wie diese Konzepte durch verschiedene Iterator-Kategorien nach \cite{plp} unterstützt werden, und ein Vergleich ihrer Leistungsfähigkeit durch einen Code-Benchmark wird vorgenommen.
+	% Die Arbeit stellt die Entwicklung von einfachen Speicherzugriffsmethoden bis hin zu modernen Abstraktionen wie Ranges und Views dar und bewertet diese hinsichtlich Abstraktion, Lesbarkeit und Performanz.
+	% Der Fokus liegt darauf, wie Ranges und Views das Programmieren in C++ vereinfachen und effizienter gestalten können.
+
+	Diese Ausarbeitung untersucht moderne Zugriffsmethoden auf C++-Container auf Stand des C++23-Standards und widmet sich insbesondere der Ranges-Bibliothek und Views.
+	Sie diskutiert die Funktionsweise von Iteratoren, Ranges und Views anhand der drei Iterator-Typen nach \cite{plp} und zeigt Best-Practices in der Verwendung dieser Konzepte auf.
+	Schließlich werden Views und Iteratoren mittels eines Beispiels hinsichtlich Abstraktion, Lesbarkeit und Performance verglichen.
+	Dabei werden die Vor- und Nachteile von Ranges und Views im Kontext der C++-Programmierung beleuchtet.
+	\keywords{ C++23\and Data Access\and Ranges\and Views}
+\end{abstract}
+
+\section{Einleitung}
+
+In einem Informatik-Studium beschäftigt man sich in vielen Lehrveranstaltungen mit Algorithmen.
+Dabei existieren viele Definitionen, was einen Algorithmus eigentlich auszeichnet.
+Nach \cite[S.4]{aud} ist ein Algorithmus beispielsweise \enquote{[\dots] eine eindeutige Beschreibung eines in mehreren Schritten ausgeführten \mbox{(Bearbeitungs-)} [Vorgangs]}.
+
+Neben dieser eindeutigen Beschreibung spielen beim Programmieren von Algorithmen allerdings auch die verwendeten Datenstrukturen und der Zugriff auf diese eine bedeutsame Rolle.
+Durch diese beiden Aspekte werden dem Programmierenden bekanntlich ein angemessenes Abstraktionsniveau ermöglicht \cite{aud}.
+Deshalb macht es Sinn, sich neben Algorithmen und den einhergehenden Datenstrukturen auch mit den Zugriffsmöglichkeiten auf die inhärenten Daten auseinanderzusetzen.
+
+%C++ ist eine relativ alte, aber trotzdem relativ zum Alter häufig genutzte und sehr performante Programmiersprache.
+%Viele effiziente Algorithmen wurden über die letzten Jahrzehnte in C++ geschrieben und es existieren zahlreiche C++-Bibliotheken.
+
+%Der von Name der Sprache lässt darauf hindeuten, dass ihr Erfinder \textit{Daniel Stroustroup} im Designprozess auf Hardwarenähe und Performanz, allerdings auch Abstraktion wert legte.
+%Über die Jahre seit der Einführung des ersten \cpp~-Standards 1989 hat sich in der Welt der Softwareentwicklung allerdings viel verändert.
+%In der Softwareentwickler-Praxis stehen heutzutage eher das Abstraktionsniveau, auf dem der Programmierende seine Arbeit möglichst schnell und gut verständlich verrichten kann, im Mittelpunkt.
+%Deshalb modernisiert das \cpp~-Komitee seit 2011 zusammen mit der Community den Syntax der Sprache und deren Standard-Bibliothek.
+%Über das letzte Jahrzehnt sind so etliche neue Konzepte und Funktionen hinzugekommen.
+
+Nun wurde mit der Einführung von \textit{Views} und der \textit{Ranges-Bibliothek} im C++20-Standard eine bahnbrechende Neuerung in die Standard Bibliothek eingegliedert.
+Die beiden Konzepte ermöglichen eine funktionale und damit abstraktere Methode um auf Informationen zuzugreifen und sie zu speichern.
+Da sie daher das Potential haben, der Realisierung von Algorithmen und dem allgemeinen Programmieren in C++ zugute zu kommen, lohnt sich hier eine nähere Betrachtung und Bewertung.
+Dies soll der Inhalt dieser Ausarbeitung sein.
+
+%Und wie wir anfangs schon festgestellt haben, ist dies ein kritisches Gebiet für den Entwurf von Algorithmen und im Bezug der Abstraktion, aber auch für die Restaurierung bestehender Bibliotheken, die Arbeit moderner Entwickler und damit auch somit auch für C++.
+
+Dabei sollen zunächst typische Speicherzugriffsmöglichkeiten im C++- Standard vor C++20 aufgearbeitet werden.
+Daraufhin soll ein tieferer Einblick in die C++20 Ranges-Bibliothek und Views geboten und wichtige Neuerungen des C++23 Standards eingeführt werden.
+Die Diskussion aller Konzepte soll sich dabei an den drei grundlegenden Typen von Iteratoren nach Michael L. Scott orientieren \cite{plp}.
+Schließlich sollen Views und Ranges anhand eines Codebeispiels nach den Kriterien der \textit{Abstraktion}, \textit{Lesbarkeit} und \textit{Performanz} mit C++-Iteratoren verglichen werden.
+
+\section{Methodik}
+
+%Um die verschiedenen Speicherzugriffsarten vergleichbar darstellen zu können, soll \autoref{code:frame} als Code-Rahmen um die folgenden Beispiele verwendet werden.
+Um die verschiedenen Speicherzugriffsarten vergleichbar darstellen zu können, soll die folgenden Beispiele jeweils über das Array \texttt{fib} iterieren und dessen Inhalt auf der Konsole ausgegeben.
+\texttt{fib} beinhaltet die ersten 11 Fibonacci-Zahlen, beginnend von 0.
+
+% \begin{figure}
+% 	%\captionsetup{singlelinecheck=false} % justification=raggedright
+% 	\caption{Code-Ramen für folgende Beispiele - Header: \texttt{array}, \texttt{iostream} (, \texttt{cstdint})}
+% 	\label{code:frame}
+% 	\begin{lstlisting}[language=C++]
+% constexpr std::array<u_int32_t, 11> fib = { 0,1,1,2,3,5,8,13,21,34,55 };
+% auto main() -> int {
+% 	// Inline pieces of code from following examples right here
+% 	return 0;
+% }\end{lstlisting}
+% \end{figure}
+
+Der Code-Stil der folgenden Beispiele orientiert sich nach bestem Gewissen der Autoren an modernen C++ Best-Practices, wie sie bspw. in \cite{profcpp} beschrieben werden.
+Um den Verzicht auf explizite Namensräume zu verdeutlichen, wird in den Beispielen kein Namensraum vor dem \textit{Bereichsauflösungsoperator} \texttt{::} verwendet.
+
+Von der im C++23-Standard eingeführten \texttt{print}-Funktion zur vereinfachten Ausgabe von formatierten Strings wurde zum Zeitpunk des Schreibens aus Verfügbarkeitsgründen verzichtet.
+
+Nun wollen wir beginnen, die Zugriffswege auf C++-Container zu ergründen.
+
+\subsection{Direkter Speicherzugriff}
+
+Die von C übernommene Art auf die Elemente eines Containers zuzugreifen ist die Verwendung des \textit{Subscript-Operators} \texttt{operator[]} auf Pointer. % TODO
+Dabei handelt es sich um eine direkte, speichergebundene Indexierung einer sequenziellen Datenstruktur (siehe \autoref{code:subscript-operator}).
+
+\begin{figure}[H]
+	\centering
+	\caption{Code-Beispiel: Iteration über \texttt{fib} mittels \texttt{operator[]}}
+	\label{code:subscript-operator}
+	\begin{lstlisting}[language=C++]
+	for(auto i = 0; i < size(::fib); ++i) {
+		std::cout << ::fib[i] << std::endl;
+	}\end{lstlisting}
+\end{figure}
+
+\noindent Diese Methode ist syntaktisch wenig abstrakt und fehleranfällig (vgl. \cite[S.274]{plp}).
+Außerdem macht sie nur für sequenzielle Datenstrukturen Sinn, denn sonst müssten freistehende Hilfsprozeduren geschrieben werden.
+Dies folgt daraus, dass C keine Mechanismen für Abstraktion wie Module oder Klassen aufweist.
+
+Da diese Mechanismen in C++ allerdings \enquote{by design} enthalten sind, wollen wir die passende Abstraktion in From von \textit{Iterator Objects} im Verlauf des folgenden Abschnitts \ref{text:iterator-objects} diskutieren.
+Vorerst sollen hingegen allgemeine Iteratoren eingeführt werden.
+
+\subsection{Iteratoren}
+
+Iteratoren stellen in vielen abstrakten Programmiersprachen wie Java oder Python die gängigste Methode dar, um auf die Elemente beliebiger Container zuzugreifen.
+Fundamental lassen sich Iteratoren nach \cite[S.269ff.]{plp} in die folgenden drei Kategorien aufgliedern:
+
+\begin{enumerate}[1.]
+	\label{enum:iterator-types}
+	\item \textbf{Iterator Objects}: Gewöhnliche Objekte, die Methoden zur Initialisierung, Generierung des nächsten Elements und Test auf das Ende der Sequenz anbieten.
+	      Der Fortschrittszustand des Iterators wird hierbei in den Objektattributen der jeweiligen Iterator-Instanz gespeichert.
+
+	\item \textbf{First-Class Iterators}: Der Code, welcher auf den Elementen eines Containers ausgeführt werden soll, wird als Funktion verfasst.
+	      Diese erhält ein Elemente des Containers als Argument.
+	      Anschließend wird sie als Argument an den Iterator übergeben, der sie auf den Elementen des Containers aufruft.
+
+	\item \textbf{True Iterators}: Beim Aufrufen einer True-Iterator-Funktion berechnet diese den nächsten Wert und gibt ihn durch ein spezielles Schlüsselwort an den Aufrufer zurück.
+	      Dabei wird der \textit{Problem Counter} und der innere Zustand der Funktion zwischengespeichert, sodass die Iterator-Prozedur bei erneuten Aufrufen hinter der letzten, speziellen Rückgabestelle fortgeführt werden kann.
+	      Die Iteration endet, wenn die True-Iterator-Prozedur normal zum Hauptprogramm zurückkehrt.
+	      %Im Affekt heißt das, dass der Iterator einem separaten Kontrollflussfaden mit eigenen \textit{Problem Counter} entspricht, wessen Ausführung verschachtelt in der Schleife stattfindet.
+\end{enumerate}
+
+\noindent Jede Iterator-Variante ist in einem anderen Programmierparadigma typisch, jedoch sollen sie alle im Laufe dieser Ausarbeitung in einer Form in C++ auftauchen.
+Beginnen wollen wir mit der bekanntesten in C++ enthaltenen Form.
+
+\subsubsection{Iterator Objects}
+\label{text:iterator-objects}
+
+%Bei Iteratoren handelt es sich in C++ um eine Abstraktion über (eingeschränkte) Pointer auf beliebigen Containern.
+%Durch sie können Off-by-One und Out-of-Bounds Fehler vermieden werden.
+
+Iterator-Objekte stellen in C++ die Norm für das Iterieren über Container dar.
+Aufgrund der Hardwarenähe der Sprache ähneln sie in C++ syntaktisch eher dem Umgang mit Pointern als Iteratoren in typischen \textit{OOP}-Sprachen wie Java.
+Um den Unterschied zu verdeutlichen, folgt eine weitere Instanz unseres Beispieles mit Iteratoren in Java (\autoref{code:iterator-java}) und C++ (\autoref{code:iterator-cpp}).
+
+\begin{figure}
+	\caption{Iteration über \texttt{fib}-Liste mit Iterator in Java (\texttt{jdk} $21$, \texttt{--enable-preview})}
+	\label{code:iterator-java}
+	\begin{lstlisting}[language=Java]
+final List<Integer> fib = List.of(0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55);
+
+void main() {
+    for (var it = fib.iterator(); it.hasNext(); ) {
+        System.out.println(it.next());
+    }
+}\end{lstlisting}
+	\caption{Iteration über \texttt{fib} mittels Iteratoren in C++}
+	\label{code:iterator-cpp}
+	\begin{lstlisting}[language=C++]
+	for (auto it = cbegin(::fib); it != cend(::fib); ++it) {
+		std::cout << *it << std::endl;
+	}\end{lstlisting}
+\end{figure}
+
+%In Java wird der Iterator genauso wie in C++ im ersten der drei Teile der for-Schleife erstellt.
+%In beiden Fällen wird sukzessive Typisierung verwendet, um den Schreibaufwand zu verringern.
+
+%Ein struktureller Vergleich ist dem:der Lesenden überlassen.
+\noindent Auf wichtige Feinheiten der C++-Variante wollen wir später nach der Erklärung der angewandten Konzepte nochmals eingehen.
+
+% In Java werden explizite Iterator über die \texttt{iterator} Methode eines Containers erstellt.
+% In C++ wäre das bspw. über \texttt{::fib->cbegin()} auch möglich, allerdings sollte man besser \textit{ADL} verwenden.
+% Die \texttt{cbegin}-Funktion wurde gegenüber von \texttt{begin} gewählt, da ein konstanter Iteratortyp ($\neq$\texttt{const}) für eine Iteration ohne Mutation in unserem Beispiel ausreicht.
+
+% Während in Java die Schleifenbedingung der Iteration wieder durch eine Member-Methode überprüft wird, wird im C++-Beispiel mittels \texttt{operator!=} mit \texttt{cend} verglichen.
+% Der Operator wurde verwendet, da jede Iterator-Kategorie diesen Operator definieren muss.
+
+% Wichtig ist außerdem, dass \texttt{it} nach Initialisierung einem Pointer auf das erste Element von \texttt{::fib} entspricht, während \texttt{cend} auf die Adresse hinter dem letzten Element von \texttt{fib} zeigt.
+% Dies hat den Hintergrund, dass der Iterator nach der Dereferenzierung des letzten Elements des Containers inkrementiert wird und so die Schleifenbedingung bei der nächsten Überprüfung nicht mehr erfüllen soll.
+% Zudem können so leere Container behandeln werden.
+
+
+%Anstelle des \texttt{operator++} lässt Java den Inkrement-Block aus, wodurch er implizit mit einem \texttt{true} erfüllt wird.
+%Java's \texttt{next}-Methode inkrementiert den Iterator und gibt dann das nun referenzierte Element zurück.
+%Dies stellt im Gegensatz zu C++, wo das referenzierte Element durch \texttt{operator*} zurückgegeben wird.
+
+Da C++-Iteratoren syntaktisch weniger objektorientiert und trivial als die Java-Iteratoren sind, wollen wir sie nun tiefer betrachten.
+
+\subsubsection{C++ Iteratoren}
+
+Jeder Container-Typ der \texttt{std}-Bibliothek hat einen eigenen Iterator als Typ-Alias definiert, welcher das Interface einer Iterator-Kategorie aus \autoref{table:cpp-iterator-types} implementiert.
+Das implementierte Interface hängt von der Struktur des Containers ab.
+
+Algorithmen aus der \textit{Standard Template Library} (kurz \textit{STL}) spezifizieren wiederum Iterator-Kategorien als informelle Typparameter für ihre Argumente.
+%Wird ein unpassender Iterator an einen STL-Algorithmus übergeben, kommt es zur Übersetzungszeit zu einen Template-Fehler.
+Iteratoren stellen in der \texttt{std} demnach die Schnittstelle zwischen Algorithmen und Container-Typen dar.
+
+\begin{table}
+	\caption{C++ Iterator-Typ-Interface nach \cite[S.604 f.]{profcpp}}
+	\label{table:cpp-iterator-types}
+	\vspace{-1em}
+	\caption*{\textbf{Legende}:\quad $^\ast\dotsc:=$ \texttt{operator}\dots,\qquad$\dots^\dag:=$ \dots-Konstruktor}
+
+	\hspace{-1.5em}
+	\begin{tabular}{l|c|c}
+		\hline
+		Interface-Kategorie                        & Operationsspezifikation                                                                                                                & Anmerkung                                    \\
+
+		\hline
+		\hline
+
+		Input (Read)                               & \{$^\ast$\texttt{++}, $^\ast$\texttt{*}, $^\ast$\texttt{->}, $^\ast$\texttt{=}, $^\ast$\texttt{==}, $^\ast$\texttt{!=}, Copy$^\dag$\}~ & Read-Only                                    \\
+
+		Forward                                    & \{Default$^\dag$\} $\cup$ Input                                                                                                                                                       \\
+
+		Bidirectional                              & \{$^\ast$\texttt{--}\} $\cup$ Forward                                                                                                                                                 \\
+
+		\shortstack{Random Access~~\vspace{1.1em}} &
+		~\shortstack{ \{$^\ast$\texttt{+}, $^\ast$\texttt{-}, $^\ast$\texttt{+=}, $^\ast$\texttt{-=} $^\ast$\texttt{<}, $^\ast$\texttt{>},                                                                                                 \\ $^\ast$\texttt{<=}, $^\ast$\texttt{>=}, $^\ast$\texttt{[]}\}~$\cup$ Bidirectional}
+		                                           & \shortstack{Equivalent zu Raw Pointer\vspace{1.1em}}                                                                                                                                  \\
+
+		\shortstack{Contiguous\vspace{1.1em}}      & \shortstack{Random Access\vspace{1.1em}}                                                                                               & \shortstack{~Elemente adjazent $\Rightarrow$ \\ Speicherrepräsentationen adjazent} \\
+
+		\hline
+
+		\shortstack{Output (Write)\vspace{1em}}    & \shortstack{\{$^\ast$\texttt{++}, $^\ast$\texttt{*}, $^\ast$\texttt{=}, Copy$^\dag$\}\vspace{1em}}                                     & \shortstack{~Write-Only:                     \\ Ermöglicht \texttt{*iter = $\langle{value}\rangle$;}}  \\
+	\end{tabular}
+\end{table}
+
+\noindent Iterator-Typen, die in die ersten fünf Iterator-Kategorien aus \autoref{table:cpp-iterator-types} fallen und die Eigenschaften eines \textit{Output}-Iterators nicht erfüllen, werden auch als \textit{konstant} bezeichnet und im Quellcode mit einem \texttt{const\_}-Prefix versehen.
+Iteratoren, die zusätzlich die Eigenschaften des Output-Iterators erfüllen, werden auch \enquote{mutable} genannt.
+Sie erhalten hingegen keine spezielle Kennzeichnung im Code.
+
+Aus diesen Eigenschaften lässt die in \autoref{fig:iterator-hierarchie} dargestellte, informelle Vererbungshierarchie herleiten.
+
+\begin{figure}
+	\caption{Informelle Vererbungshierarchie der C++ Iterator-Interfaces/Kategorien}
+	\label{fig:iterator-hierarchie}
+
+	\hspace{-.3em}
+	\begin{tikzpicture}[semithick, node distance=2cm]
+		\tikzstyle{textt}=[font={\scriptsize}]
+		\tikzstyle{edge-text}=[-Latex, dotted, style={textt}, above, sloped, midway]
+		\tikzstyle{state}=[draw, inner xsep=5pt, inner ysep=5pt, rounded corners=2pt, style={textt}, align=center]
+
+		\node[style=state] (in) {{\tiny Constant}\\Input \texttt{It}};
+
+		\node[style=state] (for) [right of=in] {{\tiny Constant}\\Forward \texttt{It}};
+		\path[style=edge-text] (for.west) edge (in.east);
+
+		\tikzset{node distance=2.5cm}
+
+		\node[style=state] (bi) [right of=for] {{\tiny Constant}\\Bidirectional \texttt{It}};
+		\path[style=edge-text] (bi.west) edge (for.east);
+
+		\tikzset{node distance=3cm}
+
+		\node[style=state] (rand) [right of=bi] {{\tiny Constant}\\Random Access \texttt{It}};
+		\path[style=edge-text] (rand.west) edge (bi.east);
+
+		\node[style=state] (cont) [right of=rand] {{\tiny Constant}\\Contiguous \texttt{It}};
+		\path[style=edge-text] (cont.west) edge (rand.east);
+
+		\tikzset{node distance=1.25cm}
+
+		\node[style=state] (m_in) [below of=in] {{\tiny(Mutable)}\\Input \texttt{It}};
+		\node[style=state] (m_for) [below of=for] {{\tiny(Mutable)}\\Forward \texttt{It}};
+		\node[style=state] (m_bi) [below of=bi] {{\tiny(Mutable)}\\Bidirectional \texttt{It}};
+		\node[style=state] (m_rand) [below of=rand] {{\tiny(Mutable)}\\Random Access \texttt{It}};
+		\node[style=state] (m_cont) [below of=cont] {{\tiny(Mutable)}\\Contiguous \texttt{It}};
+
+		\path[style=edge-text] (m_in.north) edge (in.south);
+		\path[style=edge-text] (m_for.north) edge (for.south);
+		\path[style=edge-text] (m_bi.north) edge (bi.south);
+		\path[style=edge-text] (m_rand.north) edge (rand.south);
+		\path[style=edge-text] (m_cont.north) edge (cont.south);
+
+		\node[style=state] (out) [below of=m_bi] {Output \texttt{It}};
+
+		\path[style=edge-text] (m_in.south) edge (out);
+		\path[style=edge-text] (m_for.south) edge (out);
+		\path[style=edge-text] (m_bi.south) edge (out);
+		\path[style=edge-text] (m_rand.south) edge (out);
+		\path[style=edge-text] (m_cont.south) edge (out);
+	\end{tikzpicture}
+\end{figure}
+
+\paragraph{Iteratoren auf Containern}
+Genauer definieren \texttt{std}-Container mindestens die Mitglieder \texttt{$\langle{container}\rangle$::iterator} und \texttt{const\_iterator}.
+Wenn ein Container mindestens die Bidirectional-Iteratorkategorie implementiert, verfügt er zusätzlich über einen \texttt{reverse\_iterator} und \texttt{const\_reverse\_iterator} Typ-Alias.
+
+Instanzen der genannten Typ-Alias erlangt man durch das Aufrufen der \texttt{begin}, \texttt{cbegin}, \texttt{end} und \texttt{cend} Funktionen im \texttt{std}-Namensraum oder als Objektmethode.
+Für diese Methoden existieren Überladungen für Reverse-Iterators, deren Namen jeweils mit einem \texttt{r}-Suffix versehen sind.
+Ein \textit{Best Practice} ist hier, sich die \textit{Argument Dependent Lookups} (kurz \textit{ADL}) zunutze zu machen \cite[S.608]{profcpp}.
+
+\paragraph{Argument Dependent Lookups}
+ADL bezeichnet die Eigenschaft des Compilers, bei der Auflösung einer Funktion $F$ mit einem Parameter $T$ zuerst im Namensraum von $T$ nach einer passenden Überladung für $F$ zu suchen.
+Falls dies fehlschlägt, sucht der Compiler in anderen Namensräumen wie \texttt{std} nach passenden Überladungen von $F$.
+Wenn man hingegen explizit den Namensraum \texttt{std} verwendet, schließt man die Suche im Namensraum von $T$ aus.
+Bei der Verwendung von Member-Methoden (z.B. \texttt{->begin}) wird hingegen die Suche in anderen Namensräumen ausgeschlossen.
+
+%Somit werden bei eigen definierten Container-Typen, die mit \texttt{begin} funktionieren sollen, einfach für \texttt{begin} kein Namespace angegeben, um immer die passende Auflösung für \texttt{begin}-Funktion zu erhalten.
+
+Nun haben sich alle Unbekannten aus dem Vergleich von Iteratoren in C++ und Java in Beispiel \autoref{code:iterator-cpp} und \ref{code:iterator-java} (sowie \ref{code:subscript-operator}) aufgelöst.
+Trotzdem wollen wir darauf hinweisen, dass im C++-Code absichtlich \texttt{operator!=} zum Vergleich mit \texttt{cend(::it)} verwendet wurde.
+Dies folgt aus \autoref{table:cpp-iterator-types}, da jeder Iterator-Typ den \texttt{operator!=} implementiert und sich daher konsistent anwenden lässt.
+
+\paragraph{Sortierung mit Iteratoren}
+
+Die Semantik der Iterator-Hierarchie lässt sich nicht nur beim Iterieren, sondern auch bei der Anwendung von Algorithmen beobachten.
+Wenn man bspw. die STL-Funktion \texttt{std::sort} anwenden möchte, muss man sicherstellen, dass die verwendete Datenstruktur mindestens einen (mutable) \texttt{RandomIt} implementiert.
+Verwendet man den Algorithmus wie in \ref{code:sorting-legacy} auf einer \texttt{std::list} mit bidirektionalen Iterator, verletzt man die Iterator-Typ-Hierarchie und erhält eine Fehlermeldung zur Übersetzungszeit.
+
+\begin{figure}
+	\caption{Sortieren mit zu schwachen Iterator-Typ, führt zu einem Übersetzungsfehler}
+	\label{code:sorting-legacy}
+	\begin{lstlisting}[language=C++]
+auto test_sort_list(std::list<u_int32_t>& list) {
+	std::sort(begin(list), end(list));
+}\end{lstlisting}
+\end{figure}
+
+% \paragraph{For-Each}
+%
+% Häufig kommt es vor, dass man sequenziell über einen Container iterieren möchte ohne auf die eigentlichen Iterator-Objekte zuzugreifen.
+% Dafür ist eine Schleife mit expliziten Iteratoren wie in \ref{code:iterator-cpp} unnötig redundant und es bietet sich an die seit C++11 verfügbaren \textit{For-Each}-Schleife zu verwenden \ref{code:for-each-cpp}.
+% Diese erstellen die Iteratoren implizit.
+%
+% \begin{figure}[H]
+% \caption{For-Each Schleife in C++}
+% \label{code:for-each-cpp}
+% \begin{lstlisting}[language=C++]
+% for ( const auto& fib_num : ::fib ) {
+% std::cout << fib_num << std::endl;
+% }\end{lstlisting}
+% \end{figure}
+
+%\noindent Die Autoren können bestätigen, dass \ref{code:for-each-cpp} in Clang mit \texttt{-O2} sehr ähnlichen Assembly-Code wie \ref{code:iterator-cpp} erzeugt \cite{compexp1:explicit}\cite{compexp1:implicit}.
+%\cite{godbolt-iterator-implicit,godbolt-iterator-explicit}.
+
+\noindent Wie wir im letzten Beispiel schon gesehen haben, benötigen STL-Algorithmen zwei Iteratoren-Paare pro Container.
+%Trotz dessen, dass wir die vollständige Sequenz sortieren wollen, müssen wir also gegensätzlich zum generellen Iterieren \ref{code:for-each-cpp} zwei Iteratoren angeben \ref{code:sorting-legacy}.
+Allerdings kann das Mismatches zwischen den verwendeten Iteratorpaaren verursachen \cite{profcpp} und ist aufgrund von C++20 Ranges unnötig redundant.
+
+\subsection{C++ Ranges}
+
+Die Ranges Bibliothek wurden als einer der \enquote{Big Four} Neuerungen im C++20-Standard aufgeführt \cite{open-std.org}.
+Sie stand seit 2018 zur Diskussion \cite{the-one-ranges-proposal} und wurde von Eric Niebler, dem Entwickler hinter der \texttt{ranges-v3} Bibliothek \cite{ranges-v3}, mitentworfen.
+
+Bei einer Range handelt es sich um eine Abstraktion über iterierbare Sequenzen von Elementen, die dementsprechend alle STL-Container erfüllen.
+Für diese Abstraktionen existieren auch Überladungen der STL-Algorithmen wie \texttt{sort}.
+So lässt sich der Code aus \autoref{code:sorting-legacy} beispielsweise weiter zu \autoref{code:sorting-ranges} verkürzen.
+
+\begin{figure}[H]
+	\caption{Sortieren mit Ranges}
+	\label{code:sorting-ranges}
+	\begin{lstlisting}[language=C++]
+	std::ranges::sort(::fib_messy);\end{lstlisting}
+\end{figure}
+
+\noindent Vergleicht man allerdings den \texttt{-O2} Assembly-Code von GCC 13 und Clang 17 für den Code aus \autoref{code:sorting-legacy} und \ref{code:sorting-ranges}, dann fällt auf, dass GCC gegensätzlich zum Syntax der Ranges-Variante längeren Assembly-Code generiert (vgl. \cite{compexp2:clang-leg} mit \cite{compexp2:clang-ranges} und \cite{compexp2:gcc-leg} mit \cite{compexp2:gcc-ranges}).
+Trotz dessen, dass mehr Instruktionen nicht unbedingt eine längere Laufzeit implizieren, finden die Autoren dies bemerkenswert.
+
+Zu dem verkürzten STL-Algorithmen bieten Ranges durch \textit{Views} und \textit{Range Adapters} ähnlich zur Java Streams-Bibliothek die lazy-Anwendung von aufeinanderfolgenden Transitionen.
+Im Folgenden wollen wir uns allerdings vorerst näher mit den Details der Ranges-Library beschäftigen, um dann auf Views und Laziness zurückkommen.
+
+\section{Methodik}
+
+Die Ranges-Library besteht aus den folgenden vier Komponenten \cite[S.617]{profcpp}:
+
+\begin{enumerate}[1.]
+	\item \textbf{Ranges}: Ein \textit{Concept} (= formale Spezifikation für Eigenschaften im Quellcode \cite[vgl. S.454 ff.]{profcpp}), welches die Anforderung für eine Iteration über eine Sequenz spezifiziert.
+	      Diese Anforderungen sind:
+
+	      \begin{itemize}
+		      \item Ein \texttt{begin}- und ein \texttt{end}-Iteratoren
+		      \item Ein \texttt{begin}-Iterator und $n\geqslant0$
+		      \item Ein \texttt{begin}-Iterator und ein Prädikat
+		      \item Spezialfall: Unendliche Ranges
+	      \end{itemize}
+
+	\item \textbf{Algorithms}: Überladungen der STL-Algorithmen aus dem \texttt{<algorithm>}-Header, die Ranges als Argumente akzeptieren
+
+	\item \textbf{Views}: Nicht-mutierende Transformationen auf Ranges, die durch \textit{Range Adapters} erstellt werden und sich durch den \texttt{operator|} zu Pipelines verbinden lassen.
+
+	\item \textbf{Factories}: Konstruktoren für Ranges oder spezieller Views, bspw. durch \texttt{iota} oder \texttt{std::generator}
+\end{enumerate}
+
+Da durch Ranges fundamentale Zugriffseigenschaften von Containern erhalten bleiben müssen, existieren äquivalente Range-Concepts zu den Iterator-Typen aus \autoref{table:cpp-iterator-types}, die nach dem Schema $\langle$\textit{it\_type}$\rangle$\texttt{\_range} benannt sind.
+Ähnlich zu Containern lassen sich auch auf Ranges die \texttt{begin}, \texttt{cbegin}, \texttt{end} und \texttt{cend} Funktionen mittels ADL aufrufen.
+Die folgenden Hilfsfunktionen für Ranges sind hingegen im \texttt{<ranges>}-Header definiert und machen keinen Gebrauch von ADL.
+
+% TODO
+%Laut \cite[S.617]{profcpp} sollen Ranges durch den Einsatz von Concepts auch die Qualität von Fehlermeldungen verbessern.
+%Die Autoren konnten dies allerdings zumindest bei der Übersetzung des angepassten Beispiels \ref{code:sorting-legacy} weder bei Clang, noch bei GCC feststellen.
+
+Sei $R$ eine beliebige Range.
+Dann existieren für $R$ die Funktionen \texttt{ranges::empty} mit $R\to\{\texttt{true},\texttt{false}\}$, \texttt{ranges::size}/\texttt{ssize} mit (soweit technisch möglich) $R\to\mathbb{Z}$ oder $\mathbb{N}_0$ und \texttt{ranges::data}/\texttt{cdata}, welche einen Pointer auf den Begin der Range zurückgibt.
+\texttt{ranges::size}/\texttt{ssize} funktioniert nur auf Ranges, deren Länge sich in einer Laufzeitkomplexität von $\mathcal{O}(1)$ bestimmen lässt.
+Auf noch nicht dereferenzierte Views trifft das hingegen nicht zu, weswegen man hier \texttt{ranges::distance} mit Laufzeitkomplexität in $\mathcal{O}(n)$ verwenden muss.
+
+Nun mehr zu den konkreten Anwendungsmöglichkeiten von Ranges.
+
+\subsection{Projektionen}
+
+Die für Ranges überladenen STL-Algorithmen bieten einheitlich neben den bekannten Überladungen für \enquote{normale} Container eine Zusätzliche an.
+Diese bietet eine Projektionsfunktion als Parameter an, welche vor der Anwendung des Algorithmus auf die Elemente der Range angewandt wird.
+
+Das kann bspw. dann nützlich sein, wenn eine Range eines Typs anhand eines \texttt{std}-Mitgliedsdatentyp sortiert werden soll, wie es häufig bei \texttt{struct}s der Fall ist.
+Eine Range aus \texttt{struct Student}s könnte so sehr kompakt nach Nachnamen, angehöriger Fakultät oder Notendurchschnitt sortiert werden.
+
+Durch die für Range-Algorithmen typischen Projektionsparameter benötigt man also nicht immer \enquote{schwerere Geschütze} wie Range Adapters und die aus ihnen resultierenden Views.
+
+\subsection{Views}
+
+Views stellen eine Schicht zwischen zwei Ranges dar, wobei die Darüberliegende durch eine Anwendung einer Funktion (genauer eines \textit{Range Adapters}) auf einer Darunterliegenden resultiert.
+Views sind dabei wiederum Ranges, Ranges aber nicht immer Views, da letztere durch die Anwendung von Range Adapters entstehen.
+In der Sprache der Mengenlehre ausgedrückt gilt also: Views $\subsetneq$ Ranges.
+Konkret sind Views in C++ durch leichtgewichtige Objekte realisiert.
+
+Views ergreifen kein Besitz von den Elementen der zugrundeliegenden Range und können diese somit auch nicht verändern.
+
+\subsubsection{Range Adapters}
+
+Die Range-Adapter-Funktionen sind im \texttt{<ranges>}-Header definiert.
+Sie bieten einen Konstruktor an, der neben den Adapter-spezifischen Parametern zur Transformationssemantik eine Range als Eingabe erfordert.
+Nützliche Adapters sind bspw. \texttt{filter}, \texttt{transform}, \texttt{take\_while} oder \texttt{zip}.
+Da man Range Adapters allerdings durch den \textit{Binary-OR-Operator} \texttt{operator|} hinter eine Range hängen kann, um sie anzuwenden, macht es manchmal Sinn auf Konstruktoren zu verzichten.
+Letzteres trifft dann zu, wenn man eine View-Pipeline aus mehreren Range Adapters aufbauen möchte (siehe \autoref{code:view-pipeline-creation}).
+
+\begin{figure}[H]
+	\caption{Erstellung eines View-Pipeline aus einer Ranges}
+	\label{code:view-pipeline-creation}
+	\begin{lstlisting}[language=C++]
+	// Construction of View-pipeline through Range Adapter constructor
+	std::views::filter(fib, &is_odd)
+		| // ...
+	// Construction of View-pipeline through pipe-operator chaining
+	fib | std::views::filter(&is_odd)
+		| // ...
+	\end{lstlisting}
+\end{figure}
+
+\noindent Die Range Adapters und ihre Konstruktoren sind im Namensraum \texttt{std::ran-ges::views} oder \texttt{std::views} unter \texttt{$\langle adapter\_name\rangle$} oder in \texttt{std::ranges} unter dem Namen \texttt{$\langle adapter\_name\rangle$\_view} verfügbar.
+Prinzipiell ähneln einzelne Range Adapters Fragmenten des \enquote{Schleifen-Rumpfes} von First-Class Iteratoren (vgl. \ref{enum:iterator-types}).
+
+\subsubsection{Lazyness}
+
+Laziness im Kontext von C++20 Views bedeutet, dass Range Adapters erst auf die zugrundeliegende Range angewendet werden, wenn über eine resultierende View iteriert wird, um deren Elemente zu dereferenzieren.
+Das Erstellen und Speichern von Views in Variablen verursacht demnach kaum kosten.
+Das hat zur Folge, dass die Anwendung von STL-Algorithmen auf einer View zu der Auswertung der in der View-Pipeline enthaltenen Range Adapters führt.
+
+Das Konzept der Laziness findet sich in der Java-Streams-Bibliothek, Kotlin Sequences oder ferner aus funktionalen Programmiersprachen wie Haskell wieder.
+\autoref{fig:ranges-laziness-example} zeigt eine Visualisierung der Auswertung einer beispielhaften View-Pipeline auf dem \texttt{fib}-Array.
+Die einzelnen Range-Adapaters werden sukzessiv und out-of-place auf die Elemente von \texttt{fib} angewendet und sparen durch den Einsatz von \texttt{take} die Anwendung der Filter auf die letzten drei Elemente des Arrays.
+
+\begin{figure}
+	\caption{Visualisierung der lazy Auswertung von Range Adapters auf der \texttt{fib}-Range\\\textit{Auswertungsreihenfolge}: von oben $\to$ unten, dann von links $\to$ rechts}
+	\label{fig:ranges-laziness-example}
+	\hspace{-2em}
+	\begin{tikzpicture}[scale=.65, node distance=6pt,every node/.style={inner ysep=12pt, inner xsep=14pt, font=\scriptsize}]
+		\draw[help lines,step=1, semithick] (0,0) grid (11,-1);
+
+		\node (exp1) at (-2,-.5) {Ausgangssequenz:};
+		\node at (-2, .2) {\texttt{Indizes}:};
+
+		\foreach \val [count=\i] in {0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55} {
+				\node[align=center] (A\i) at (\i-.5,-.5) {\val};
+			}
+
+		\foreach \i in {1,...,11} {
+				\node[above of=A\i, yshift=0.3cm] {\texttt\i};
+			}
+
+		\draw[help lines,step=1, semithick] (0,-2) grid (11,-3);
+		\foreach \val [count=\i] in {, 1, 1, , 3, 5, , 13, , , } {
+				\node[align=center] (B\i) at (\i-.5,-2.5) {\val};
+			}
+
+		\node (exp2) at (-2,-1.5) {\shortstack{Filterung:\\$n\equiv1\mod 2$}};
+		\foreach \i in {2,3,5,6,8} {
+				\path (A\i) edge[-Latex, draw, semithick] (B\i);
+			}
+		\foreach \i in {1,4,7} {
+		\draw[semithick, -{Rays[]}] (A\i) -- (B\i);
+		}
+
+		\draw[help lines,step=1, semithick] (0,-4) grid (11,-5);
+		\foreach \val [count=\i] in {, , 1, , 3, 5, , , , , } {
+				\node[align=center] (C\i) at (\i-.5,-4.5) {\val};
+			}
+
+		\node (exp3) at (-2,-3.5) {\texttt{drop(1) | take(3)}};
+		\foreach \i in {3,5,6} {
+				\path (B\i) edge[-Latex, draw, semithick] (C\i);
+			}
+		\foreach \i in {2,8} {
+		\draw[semithick, -{Rays[]}] (B\i) -- (C\i);
+		}
+
+		\draw[help lines,step=1, semithick] (0,-6) grid (11,-7);
+		\foreach \val [count=\i] in {, , 3, , 7, 11, , , , , } {
+				\node[align=center] (D\i) at (\i-.5,-6.5) {\val};
+			}
+
+		\node (exp4) at (-2,-5.5) {\shortstack{Transformation:\\$x\mapsto 2x+1$}};
+		\foreach \i in {3,5,6} {
+				\path (C\i) edge[-Latex, draw, semithick] (D\i);
+			}
+
+		\draw (C7.south west) edge [draw,decorate, decoration={brace, mirror}] node[below=-6pt] {\texttt{take(3)} erfüllt?} (C7.south west -| C8.south east);
+
+		\tikzset{node distance=0pt,every node/.style={inner ysep=5pt, inner xsep=5pt, font=\scriptsize}}
+		\draw (B11.north east) edge [draw,decorate, decoration={brace}] node[right, align=left, text width=2.5cm] {
+				out-of-place\\
+				~\\
+				Werden dynamisch erstellt, weshalb eigentlich keine leeren Indizes zwischen Werten existieren
+			} (B11.north east |- D11.south east);
+	\end{tikzpicture}
+\end{figure}
+
+\noindent Laziness ermöglicht außerdem die Arbeit auf unendlichen Ranges, auf die im Laufe des folgenden Abschnitts eingegangen werden soll.
+
+\subsubsection{Range Factories}
+
+Ranges lassen sich auch mithilfe von \textit{Range Factories} erstellen.
+Der C++20-Standard definiert vier Typen: \texttt{views::empty}, \texttt{views::single}, \texttt{views::iota} und \texttt{views::istream} (bzw. \texttt{views::basic\_istream\_view}).
+Die letzten beiden Rage Factories erzeugen unendliche Ranges.
+
+Im C++23-Standard wurden die zusätzlichen Factories \texttt{views::repeat} und \texttt{std::generator} ergänzt, von dem sich letzterer auch als Range nutzen lässt.
+Generatoren werden in Programmiersprachen wie Python und ECMAScript 2015 verwendet, um die Funktionalität von True Iterators (vgl. \ref{enum:iterator-types}) zu realisieren.
+
+Abgesehen von \texttt{std::generator} ähneln Range Adapter und Factories den True Iterators, wenn man sie in For-Each Schleifen verwendet.
+Beispielsweise kann man eine vorhandene Range kompakt mit ihren Indizes versehen, indem man den C++23 Adapter \texttt{views::enumerate} verwendet (siehe \autoref{code:true-iterator-range}).
+Bie solchen und ähnlichen Verwendungen von Range Adaptern empfinden die Autoren es als angemessen, Konstruktoren einzusetzen.
+
+\begin{figure}[H]
+	\caption{True Iterator mit C++23 Range Adapter Konstruktor}
+	\label{code:true-iterator-range}
+	\begin{lstlisting}[language=C++]
+	for(const auto &[i, f] : std::views::enumerate(::fib)) {
+		std::cout << i << ':' << f << std::endl;
+	}
+	\end{lstlisting}
+
+\end{figure}
+
+\noindent Nach der ausführlichen Diskussion aller Iterator-Kategorien, Ranges und Views, soll sich der letzte Teil der Ausarbeitung ihrer Bewertung widmen.
+
+\section{Ergebnisse}
+
+%Im Folgenden soll der direkte Speicherzugriff durch \texttt{operator[]} außer Betracht gelassen werden, da er nicht uniform über alle Container die \texttt{std}-Bibliothek hinweg verwendet werden kann.
+
+Im Folgenden soll ein Codebeispiel zum Einsatz kommen, um Ranges nach den Kriterien der \textit{Abstraktion}, \textit{Lesbarkeit} und \textit{Performanz} mit Iteratoren zu vergleichen.
+Die \enquote{Lesbarkeit} ist hier aufgrund von variierenden Vorlieben und Erfahrungen subjektiv und auch mit dem Abstraktionsniveau verbunden.
+
+\paragraph{Codebeispiel}
+Im Beispiel soll eine vereinfachte Funktion eines japanischen Vokabel-Trainers realisiert sein.
+Diese soll 3440 Vokabeln von einem Webservice abfragen und sie in einem \texttt{std::vector} aus vereinfachten \texttt{Vocab}-structs speicher.
+Für das Abfragen des Nutzers werden Transformationen auf dem Vector durchgeführt, deren Laufzeit gemessen wurde.
+Weitere Details und der direkte Vergleich zwischen einer Variante mit Iteratoren und Ranges sind aus \autoref{code:benchmark-ranges} zu entnehmen.
+
+\begin{figure}
+	\caption{Benchmarking-Ausschnitte des Testprogramms, \texttt{urlPageParameter} wird zufällig gewählt}
+	\label{code:benchmark-ranges}
+	\begin{minipage}{0.475\textwidth}
+		\begin{lstlisting}[basicstyle={\ttfamily\tiny}]
+std::array<std::string,20> filtered {};
+auto dropCount = urlPageParameter * 20;
+auto takeCount = 20;
+
+for (const auto& vocab : vocabList) {
+    if (!vocab.isCommon) {
+        continue;
+    }
+    if (0 <= --dropCount) {
+        continue;
+    }
+    if (0 <= --takeCount) {
+        filtered[takeCount] = vocab.reading;
+        continue;
+    }
+    break;
+}
+
+for (const auto& v : filtered) {
+    std::cout << v << ' ';
+} \end{lstlisting}
+		\caption*{$i$) Iteratoren}
+	\end{minipage}
+	\begin{minipage}{0.475\textwidth}
+		\begin{lstlisting}[basicstyle={\ttfamily\tiny}]
+auto filteredList {
+    vocabList | std::views::filter([](const auto& v){
+			return v.isCommon;
+		})
+        | std::views::transform([](const auto& v){
+			return v.reading;
+		})
+        | std::views::drop(20*urlPageParameter)
+        | std::views::take(20)
+};
+
+for (const auto& v : filteredList) {
+    std::cout << v << ' ';
+}
+\end{lstlisting}
+		\caption*{$ii$) Ranges}
+		%\vspace{2em}
+	\end{minipage}
+\end{figure}
+
+\paragraph{Lesbarkeit}
+Das Ranges-Beispiel in \ref{code:benchmark-ranges} $ii)$ zeigt, dass die Programmlogik vertikal deutlich kompakter und strukturierter als der Code mit Iteratoren ist.
+Der funktionalen Stil und die Idempotenz der Operationen der View-Pipeline machen den Code zudem einfach zu folgen.
+Auf der anderen Seite braucht der C++ Lambda-Syntax viel Platz, was der Lesbarkeit durch den \enquote{Boilerplate}-Code wiederum weniger einfach macht.
+Allerdings wurde in diesem Beispiel ein \texttt{struct} ohne Getter eingesetzt, welche anstelle der Lambdas hätten referenziert werden können.
+Außerdem lässt sich der Iterator-Code auch verstehen, wenn man nicht mit dem funktionalen Syntax von View-Pipelines vertraut ist.
+
+\paragraph{Abstraktion}
+Das Beispiel mit Iteratoren ist durch explizite Initialisierungen und Modifizierung von Zählvariablen technischer als der abstrakte Ranges-Code.
+So ist es bspw. möglich für die Selektion ein \texttt{std::array} als Containertyp zu wählen, was bei Ranges aufgrund der Abstraktion nicht zur Wahl steht.
+
+\paragraph{Performanz}
+
+Das Ranges-Beispiels ist dynamischer Natur, was in der Theorie Auswirkung auf die Laufzeit haben sollte.
+Bei der Betrachtung der Messungen in \autoref{fig:plot} fällt hingegen auf, dass die Zugriffsdauer auf die Vokabel-Liste für Iteratoren und Ranges ungefähr gleichstark anwächst.
+Genauere Unterschiede existieren hingegen zwischen GCC und Clang.
+Letztere Compiler produziert für unser Ranges- und Iteratoren-Beispiel den schnelleren Code.
+
+Außerdem ist hervorzuheben, dass der Ranges-Code in Clang schnelleren Code produziert als der ähnliche Iterator-Code.
+Die Autoren vermuten, dass die Laziness der View-Pipeline dem Compiler Optimierungen ermöglicht, die zu weniger Branch-Misses führen.
+Allerdings ist nicht klar, ob sich dies auch für größere Datenmengen gilt.
+
+\begin{figure}
+	\caption{Ausführungsdauer der Zugriffe auf Teilsequenzen der Vokabelliste aus \ref{code:benchmark-ranges}}
+	\label{fig:plot}
+	\begin{tikzpicture}[scale=.78]
+		\begin{axis}[
+				width=\textwidth,
+				height=5cm,
+				xlabel={Indizes von 20er-Folgen aus einem \texttt{std::vector<JapVocab>} \texttt{struct}s},
+				xmin=0, xmax=150,
+				ylabel={$t$ in \textit{ns}},
+				%ymin=0, ymax=4000,
+				legend style={at={(-.3,1)},anchor=north},
+				cycle list name=color list,
+				grid=major,
+				%mark repeat=2
+			]
+
+			\addplot table [x=i, y=s, col sep=space, green] {../measurements/gcc-ranges.csv};
+			\addlegendentry{Ranges GCC 13.2.0}
+
+			\addplot table [x=i, y=s, col sep=space, blue] {../measurements/clang-ranges.csv};
+			\addlegendentry{Ranges Clang 17.0.6}
+
+			\addplot table [x=i, y=s, col sep=space, yellow] {../measurements/gcc-iter.csv};
+			\addlegendentry{Iter GCC 13.2.0}
+
+			\addplot table [x=i, y=s, col sep=space, red] {../measurements/clang-iter.csv};
+			\addlegendentry{Iter Clang 17.0.6}
+		\end{axis}
+	\end{tikzpicture}
+
+\end{figure}
+
+\section{Fazit}
+
+Nach der ausführlichen Diskussion der C++-Speicherzugriffsarten ist klar, dass moderne C++-Standards dem Programmierenden viel Freiraum bieten.
+Dabei sind C++23 Ranges eine interessante Ergänzung, die eine neue Variation ermöglichen oder bestehende erweitern.
+Sie bieten ein hohes Abstraktionsniveau und sind gut lesbar, wenn man mit dem Syntax vertraut ist.
+Außerdem sind sie für unser Beispiel auf einer kleine Datenmenge performanter als Iteratoren, weswegen sie sich für ähnliche Anwendungszwecke zum praktischen Einsatz eignen.
+
+Allerdings würden die Autoren davon abraten, nun schon bestehenden Code, der auf Iteratoren setzt, mit Ranges und View-Pipelines zu ersetzen.
+Benchmarking schadet hier nicht.
+
+
+\section*{Reproduzierbarkeit}
+
+\begin{enumerate}[i.]
+	\item \href{https://github.com/becknik/SeminarModernCpp}{GitHub Repository}:
+	      \begin{itemize}
+		      \item Vollständiger Code zu Benchmark \ref{code:benchmark-ranges}
+		      \item API-Zusammenfassung für Range Adapters
+		      \item Ranges-Code zur Visualisierung von Laziness in \autoref{fig:ranges-laziness-example}
+		      \item Experiment mit \texttt{std::generator}
+	      \end{itemize}
+\end{enumerate}
+
+\newpage
+\printbibliography
+\end{document}
