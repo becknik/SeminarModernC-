@@ -3,6 +3,14 @@
 My own code and the LaTeX papers contents of the seminar "Modernes C++" at the University of Stuttgart.
 The topic of the paper is Ranges and Views
 
+## Table of Contents
+
+- [generator_fib.cpp](./generator_fib.cpp) [generator_fib.js](./generator_fib.js): Little experiments with generators (to be realized into the compilers)
+- [range-adapter-mathe-zusammenfassung.tex](./range-adapter-mathe-zusammenfassung.tex): Ranges API summary I had to remove from the paper
+- [ranges_lazy.cpp](./ranges_lazy.cpp): The implementation of the visual views pipeline examples from the paper
+- [Benchmark Executables: Iterators vs Ranges](./src)
+- [The Papers Code](./paper_template_student)
+
 ## Getting Started
 
 ### Dependencies
@@ -12,12 +20,15 @@ When you're one of the bespoken Nix-users out there, you just have to `nix-devel
 Else, the programs the authors made use of:
 
 ```shell
-# Building
+# LaTeX
+xelatex
+# C++
+## Building
 cmake: 3.27.8
 (ninja: 1.11.1)
 clang: 17.0.6
 GCC: 13.2.0
-# Dependencies
+## Dependencies
 curl: 8.5.0
 nlohmann_json: 3.11.3
 ```
@@ -34,6 +45,24 @@ cmake --build ./cmake-build-clang --target {benchmark-iter,benchmark-ranges}
 ```
 
 ### LaTeX
+
+#### "Paper"
+
+```shell
+cd paper_template_student && xelatex samplepaper.tex
+```
+
+#### Ranges Summary
+
+```shell
+xelatex ./range-adapter-mathe-zusammenfassung.tex
+```
+
+### Experiments
+
+```shell
+node generator_fib.js
+```
 
 ## Measurements
 

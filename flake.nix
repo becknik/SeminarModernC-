@@ -13,6 +13,14 @@
           buildInputs = with pkgs; [
             bashInteractive
 
+            (texliveMedium.withPackages (ps: with ps; [
+              mmap
+              csquotes
+              hyphenat
+              pgfplots
+              biblatex
+            ]))
+
             clang_17
             gcc13
 
