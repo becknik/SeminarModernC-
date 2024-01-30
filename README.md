@@ -1,7 +1,7 @@
 # SeminarModernCpp
 
 My own code and the LaTeX papers contents of the seminar "Modernes C++" at the University of Stuttgart.
-The topic of the paper is Ranges and Views
+The topic of the paper is Ranges and Views.
 
 ## Table of Contents
 
@@ -15,7 +15,7 @@ The topic of the paper is Ranges and Views
 
 ### Dependencies
 
-When you're one of the bespoken Nix-users out there, you just have to `nix-develope` (see [flake.nix](./flake.nix)) :^)
+When you're one of the enlightened Nix-users out there, you just have to `nix-develope` and sacrifice your bandwidth for me (see [flake.nix](./flake.nix)) :^)
 
 Else, the programs the authors made use of:
 
