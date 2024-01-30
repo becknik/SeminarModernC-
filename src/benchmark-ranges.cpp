@@ -1,6 +1,8 @@
 #include <nlohmann/json.hpp>
 #include <curl/curl.h>
 
+#include <fstream>
+#include <filesystem>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -46,6 +48,24 @@ auto writeCallback(void* contents, size_t size, size_t nmemb, std::string& outpu
     return total_size;
 }
 
+std::string getCacheFileName(int page) {
+    return std::format(".cache/page_{}.json", page);
+}
+
+bool isCacheAvailable(int page) {
+    return std::filesystem::exists(getCacheFileName(page));
+}
+
+void saveToCache(int page, const std::string& data) {
+    std::ofstream cacheFile(getCacheFileName(page));
+    cacheFile << data;
+}
+
+std::string readFromCache(int page) {
+    std::ifstream cacheFile(getCacheFileName(page));
+    return std::string((std::istreambuf_iterator<char>(cacheFile)), std::istreambuf_iterator<char>());
+}
+
 auto main() -> int {
 	// Curl setup, error handling & callback registration
     CURL* curl = curl_easy_init();
@@ -60,24 +80,32 @@ auto main() -> int {
 
 	// The Jisho REST-API to be leveraged receives a URL param from 1 <= i <= 172
     for (const auto page : std::views::iota(1,173)) {
-        std::cout << std::format("> Fetching Jisho API JLPT1 page {}...\n", page);
-
-        // Set the URL for the libcurl request
-        std::string fullUrl =
-			std::format("https://jisho.org/api/v1/search/words?keyword=%23jlpt-n1&page={}", page);
-        curl_easy_setopt(curl, CURLOPT_URL, fullUrl.c_str());
-
-        // Prepare writing fetched data to a string
         std::string jsonResult;
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &jsonResult);
 
-        // Perform the request & check for errors
-        CURLcode res = curl_easy_perform(curl);
+        if (isCacheAvailable(page)) {
+            jsonResult = readFromCache(page);
+        } else {
+            std::cout << std::format("> Fetching Jisho API JLPT1 page {}...\n", page);
 
-        if (res != CURLE_OK) {
-            std::cerr << "Error fetching data: " << curl_easy_strerror(res) << std::endl;
-            curl_easy_cleanup(curl);
-            return 1;
+            // Set the URL for the libcurl request
+            std::string fullUrl =
+                    std::format("https://jisho.org/api/v1/search/words?keyword=%23jlpt-n1&page={}", page);
+            curl_easy_setopt(curl, CURLOPT_URL, fullUrl.c_str());
+
+            // Prepare writing fetched data to a string
+            jsonResult = std::string{};
+            curl_easy_setopt(curl, CURLOPT_WRITEDATA, &jsonResult);
+
+            // Perform the request & check for errors
+            CURLcode res = curl_easy_perform(curl);
+
+            if (res != CURLE_OK) {
+                std::cerr << "Error fetching data: " << curl_easy_strerror(res) << std::endl;
+                curl_easy_cleanup(curl);
+                return 1;
+            }
+
+            saveToCache(page, jsonResult);
         }
 
         nlohmann::json jsonData = nlohmann::json::parse(jsonResult);
@@ -112,7 +140,22 @@ auto main() -> int {
     std::uniform_int_distribution userPageRequest{ 1, 150 };
 
 	// To warm up the cache
-    std::ranges::sort(vocabList, {}, [](const JapVocab& vocab) {return vocab.word;});
+    //std::ranges::sort(vocabList, {}, [](const JapVocab& vocab) {return vocab.word;});
+
+    // Warmup
+    for (auto i = 0; i < 10; ++i) {
+        const auto urlPageParameter = userPageRequest(mt19937) - 1;
+        auto filteredList {
+                vocabList | std::views::filter([](const auto& v){return v.isCommon;})
+                | std::views::transform([](const auto& v) {return v.reading;})
+                | std::views::drop(20*urlPageParameter)
+                | std::views::take(20)
+        };
+        for (const auto& v : filteredList) {
+            std::cout << v << ' ';
+        }
+        std::cout << std::endl;
+    }
 
     for (auto i = 0; i < 50; ++i) {
         const auto urlPageParameter = userPageRequest(mt19937) - 1;
@@ -125,6 +168,7 @@ auto main() -> int {
                 | std::views::drop(20*urlPageParameter)
                 | std::views::take(20)
         };
+
         for (const auto& v : filteredList) {
             std::cout << v << ' ';
         }
@@ -132,7 +176,7 @@ auto main() -> int {
         const auto t2 = high_resolution_clock::now();
         const auto delta_ms{std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1)};
 
-        std::cout << std::format("\n{}. [{}] {}ns\n\n", i, urlPageParameter, delta_ms.count());
+        std::cout << std::format("\n{}:{}ns\n\n", urlPageParameter, delta_ms.count());
     }
     return 0;
 }
