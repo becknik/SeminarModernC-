@@ -427,7 +427,7 @@ Trotz dessen, dass mehr Instruktionen nicht unbedingt eine längere Laufzeit imp
 Zu dem verkürzten STL-Algorithmen bieten Ranges durch \textit{Views} und \textit{Range Adapters} ähnlich zur Java Streams-Bibliothek die lazy-Anwendung von aufeinanderfolgenden Transitionen.
 Im Folgenden wollen wir uns allerdings vorerst näher mit den Details der Ranges-Library beschäftigen, um dann auf Views und Laziness zurückkommen.
 
-\section{Methodik}
+\subsubsection{Komposition}
 
 Die Ranges-Library besteht aus den folgenden vier Komponenten \cite[S.617]{profcpp}:
 
@@ -464,7 +464,7 @@ Auf noch nicht dereferenzierte Views trifft das hingegen nicht zu, weswegen man 
 
 Nun mehr zu den konkreten Anwendungsmöglichkeiten von Ranges.
 
-\subsection{Projektionen}
+\subsubsection{Projektionen}
 
 Die für Ranges überladenen STL-Algorithmen bieten einheitlich neben den bekannten Überladungen für \enquote{normale} Container eine Zusätzliche an.
 Diese bietet eine Projektionsfunktion als Parameter an, welche vor der Anwendung des Algorithmus auf die Elemente der Range angewandt wird.
@@ -474,7 +474,7 @@ Eine Range aus \texttt{struct Student}s könnte so sehr kompakt nach Nachnamen, 
 
 Durch die für Range-Algorithmen typischen Projektionsparameter benötigt man also nicht immer \enquote{schwerere Geschütze} wie Range Adapters und die aus ihnen resultierenden Views.
 
-\subsection{Views}
+\subsubsection{Views}
 
 Views stellen eine Schicht zwischen zwei Ranges dar, wobei die Darüberliegende durch eine Anwendung einer Funktion (genauer eines \textit{Range Adapters}) auf einer Darunterliegenden resultiert.
 Views sind dabei wiederum Ranges, Ranges aber nicht immer Views, da letztere durch die Anwendung von Range Adapters entstehen.
@@ -507,7 +507,7 @@ Letzteres trifft dann zu, wenn man eine View-Pipeline aus mehreren Range Adapter
 \noindent Die Range Adapters und ihre Konstruktoren sind im Namensraum \texttt{std::ran-ges::views} oder \texttt{std::views} unter \texttt{$\langle adapter\_name\rangle$} oder in \texttt{std::ranges} unter dem Namen \texttt{$\langle adapter\_name\rangle$\_view} verfügbar.
 Prinzipiell ähneln einzelne Range Adapters Fragmenten des \enquote{Schleifen-Rumpfes} von First-Class Iteratoren (vgl. \ref{enum:iterator-types}).
 
-\subsubsection{Lazyness}
+\subsubsection{Laziness}
 
 Laziness im Kontext von C++20 Views bedeutet, dass Range Adapters erst auf die zugrundeliegende Range angewendet werden, wenn über eine resultierende View iteriert wird, um deren Elemente zu dereferenzieren.
 Das Erstellen und Speichern von Views in Variablen verursacht demnach kaum kosten.
