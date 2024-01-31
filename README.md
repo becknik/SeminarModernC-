@@ -5,23 +5,26 @@ The topic of the paper is Ranges and Views.
 
 ## Table of Contents
 
-- [generator_fib.cpp](./generator_fib.cpp) [generator_fib.js](./generator_fib.js): Little experiments with generators (to be realized into the compilers)
-- [range-adapter-mathe-zusammenfassung.tex](./range-adapter-mathe-zusammenfassung.tex): Ranges API summary I had to remove from the paper
-- [ranges_lazy.cpp](./ranges_lazy.cpp): The implementation of the visual views pipeline examples from the paper
-- [Benchmark Executables: Iterators vs Ranges](./src)
-- [The Papers Code](./paper_template_student)
+- [Benchmark Executables: Iterators vs Ranges](./src): Used `cmake` to setup
+- [The Article](./paper_template_student)
+- [range-adapter-mathe-zusammenfassung.tex](./range-adapter-mathe-zusammenfassung.tex): Mathematical style ranges API summary I had to remove from the paper
+- [generator_fib.cpp](./generator_fib.cpp) [generator_fib.js](./generator_fib.js): Little experiments with generators (to be implemented into C++ compilers...)
+- [ranges_lazy.cpp](./ranges_lazy.cpp): The implementation of the visual views pipeline example from the paper
+- `flake.*`: For reproducibility and swag
 
 ## Getting Started
 
 ### Dependencies
 
-When you're one of the enlightened Nix-users out there, you just have to `nix-develope` and sacrifice your bandwidth for me (see [flake.nix](./flake.nix)) :^)
+When you're one of the enlightened Nix-users out there, you just have to `nix-develop` and sacrifice your bandwidth for me (see [flake.nix](./flake.nix)) :^)
 
-Else, the programs the authors made use of:
+If the reader isn't interest in cool tech, the authors made use of the following software:
 
 ```shell
 # LaTeX
-xelatex
+TeX Live 2023/nixos.org
+XeTeX 3.141592653-2.6-0.999995
+kpathsea version 6.3.5
 # C++
 ## Building
 cmake: 3.27.8
@@ -36,6 +39,7 @@ nlohmann_json: 3.11.3
 ### C++ Benchmarks
 
 ```shell
+# Building
 cmake -DCMAKE_CXX_COMPILER=g++ -DCMAKE_MAKE_PROGRAM=ninja -G Ninja -B ./cmake-build-gcc
 cmake -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_MAKE_PROGRAM=ninja -G Ninja -B ./cmake-build-clang
 cmake --build ./cmake-build-gcc --target {benchmark-iter,benchmark-ranges}
@@ -46,7 +50,7 @@ cmake --build ./cmake-build-clang --target {benchmark-iter,benchmark-ranges}
 
 ### LaTeX
 
-#### "Paper"
+#### Article
 
 ```shell
 cd paper_template_student && xelatex samplepaper.tex
@@ -93,3 +97,5 @@ $ neofetch
          ▝▀▀▀    ▀▀▀▀▘       ▀▀▀▘
 
 ```
+
+The secondary measurements were made on a ASUS ZenBook with AMD Ryzen 5825U on Power and running a similar NixOS setup and setting as above.
