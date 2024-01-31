@@ -698,31 +698,32 @@ Allerdings ist nicht klar, ob sich dies auch für größere Datenmengen gilt.
 \begin{figure}
 	\caption{Ausführungsdauer der Zugriffe auf Teilsequenzen der Vokabelliste aus \ref{code:benchmark-ranges}}
 	\label{fig:plot}
-	\begin{tikzpicture}[scale=.78]
+	\begin{tikzpicture}
 		\begin{axis}[
 				width=\textwidth,
 				height=5cm,
 				xlabel={Indizes von 20er-Folgen aus einem \texttt{std::vector<JapVocab>} \texttt{struct}s},
-				xmin=0, xmax=150,
+				xmin=0, xmax=149,
 				ylabel={$t$ in \textit{ns}},
-				%ymin=0, ymax=4000,
-				legend style={at={(-.3,1)},anchor=north},
+				%ymin=0,
+				%ymax=3200,
+				legend style={at={(.35,0.95)}},
 				cycle list name=color list,
 				grid=major,
 				%mark repeat=2
 			]
 
 			\addplot table [x=i, y=s, col sep=space, green] {../measurements/gcc-ranges.csv};
-			\addlegendentry{Ranges GCC 13.2.0}
+			\addlegendentry{\scriptsize Ranges GCC 13.2.0}
 
 			\addplot table [x=i, y=s, col sep=space, blue] {../measurements/clang-ranges.csv};
-			\addlegendentry{Ranges Clang 17.0.6}
+			\addlegendentry{\scriptsize Ranges Clang 17.0.6}
 
 			\addplot table [x=i, y=s, col sep=space, yellow] {../measurements/gcc-iter.csv};
-			\addlegendentry{Iter GCC 13.2.0}
+			\addlegendentry{\scriptsize Iter GCC 13.2.0}
 
 			\addplot table [x=i, y=s, col sep=space, red] {../measurements/clang-iter.csv};
-			\addlegendentry{Iter Clang 17.0.6}
+			\addlegendentry{\scriptsize Iter Clang 17.0.6}
 		\end{axis}
 	\end{tikzpicture}
 
